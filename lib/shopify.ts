@@ -24,11 +24,16 @@ export function verifyShopifyHmac(searchParams: URLSearchParams): boolean {
   const provided = searchParams.get("hmac");
   if (!provided) return false;
 
-  const message = Array.from(searchParams.entries())
+  const ordered = new URLSearchParams();
+  Array.from(searchParams.entries())
     .filter(([key]) => key !== "hmac" && key !== "signature")
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join("&");
+    .forEach(([key, value]) => ordered.append(key, value));
+
+  // Re-encoding via URLSearchParams (not a naive `key=value` join) matters here:
+  // Shopify's `host` param is base64 and often contains +, /, = which must be
+  // percent-encoded the same way Shopify encoded them when it signed the message.
+  const message = ordered.toString();
 
   const computed = crypto
     .createHmac("sha256", requiredEnv("SHOPIFY_CLIENT_SECRET"))
