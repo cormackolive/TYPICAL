@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fetchRecentShopifyOrders,
-  orderTagsMatch,
+  orderMatchesInfluencerCriteria,
   deriveFulfillmentStatus,
   customerName,
   shippingAddressLabel,
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     : undefined;
 
   const orders = await fetchRecentShopifyOrders(shop.shop_domain, shop.access_token, updatedAtMin);
-  const matching = orders.filter((o) => orderTagsMatch(o.tags));
+  const matching = orders.filter(orderMatchesInfluencerCriteria);
 
   let created = 0;
   let updated = 0;

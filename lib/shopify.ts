@@ -44,11 +44,16 @@ interface ShopifyFulfillment {
   shipment_status: string | null;
 }
 
+interface ShopifyDiscountCode {
+  code: string;
+}
+
 export interface ShopifyOrder {
   id: number;
   name: string;
   created_at: string;
   tags: string;
+  discount_codes: ShopifyDiscountCode[];
   fulfillment_status: "fulfilled" | "partial" | null;
   fulfillments: ShopifyFulfillment[];
   line_items: ShopifyLineItem[];
@@ -79,7 +84,7 @@ export async function fetchRecentShopifyOrders(
   const updatedAtParam = updatedAtMin ? `&updated_at_min=${encodeURIComponent(updatedAtMin)}` : "";
   let url: string | null =
     `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/orders.json?status=any&limit=250${updatedAtParam}&fields=${encodeURIComponent(
-      "id,name,created_at,tags,fulfillment_status,fulfillments,line_items,customer,shipping_address"
+      "id,name,created_at,tags,discount_codes,fulfillment_status,fulfillments,line_items,customer,shipping_address"
     )}`;
 
   let pages = 0;
@@ -101,9 +106,11 @@ export async function fetchRecentShopifyOrders(
   return orders;
 }
 
-export function orderTagsMatch(tags: string): boolean {
-  const lower = tags.toLowerCase();
-  return lower.includes("influencer") || lower.includes("marketing");
+/** Matches orders tagged "influencer"/"marketing", or paid for with an influencer discount code. */
+export function orderMatchesInfluencerCriteria(order: ShopifyOrder): boolean {
+  const lowerTags = order.tags.toLowerCase();
+  if (lowerTags.includes("influencer") || lowerTags.includes("marketing")) return true;
+  return order.discount_codes?.some((d) => d.code.toLowerCase().includes("influencer")) ?? false;
 }
 
 export function deriveFulfillmentStatus(order: ShopifyOrder): "Unfulfilled" | "Partially complete / In transit" | "Delivered" {
