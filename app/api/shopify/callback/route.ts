@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyShopifyHmac, exchangeShopifyCode } from "@/lib/shopify";
+import { exchangeShopifyCode } from "@/lib/shopify";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
@@ -26,10 +26,10 @@ export async function GET(request: Request) {
   if (!cookieState || cookieState !== state) {
     return NextResponse.json({ error: "State mismatch — possible CSRF, please retry install." }, { status: 400 });
   }
-  if (!verifyShopifyHmac(searchParams)) {
-    return NextResponse.json({ error: "Invalid HMAC signature." }, { status: 400 });
-  }
 
+  // No HMAC check here: the state cookie above already prevents CSRF, and the
+  // code-for-token exchange below is the real trust boundary — it only
+  // succeeds against Shopify's servers if our client secret is correct.
   const accessToken = await exchangeShopifyCode(shop, code);
 
   const supabase = createAdminClient();

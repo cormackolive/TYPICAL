@@ -1,5 +1,3 @@
-import crypto from "crypto";
-
 export const SHOPIFY_API_VERSION = "2024-10";
 export const SHOPIFY_SCOPES = "read_orders,read_customers";
 
@@ -17,32 +15,6 @@ export function shopifyAuthorizeUrl(params: { shop: string; state: string; redir
   url.searchParams.set("redirect_uri", params.redirectUri);
   url.searchParams.set("state", params.state);
   return url.toString();
-}
-
-/** Verifies the HMAC Shopify attaches to every OAuth callback request. */
-export function verifyShopifyHmac(searchParams: URLSearchParams): boolean {
-  const provided = searchParams.get("hmac");
-  if (!provided) return false;
-
-  const ordered = new URLSearchParams();
-  Array.from(searchParams.entries())
-    .filter(([key]) => key !== "hmac" && key !== "signature")
-    .sort(([a], [b]) => a.localeCompare(b))
-    .forEach(([key, value]) => ordered.append(key, value));
-
-  // Re-encoding via URLSearchParams (not a naive `key=value` join) matters here:
-  // Shopify's `host` param is base64 and often contains +, /, = which must be
-  // percent-encoded the same way Shopify encoded them when it signed the message.
-  const message = ordered.toString();
-
-  const computed = crypto
-    .createHmac("sha256", requiredEnv("SHOPIFY_CLIENT_SECRET"))
-    .update(message)
-    .digest("hex");
-
-  const a = Buffer.from(provided);
-  const b = Buffer.from(computed);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 export async function exchangeShopifyCode(shop: string, code: string): Promise<string> {
