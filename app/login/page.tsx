@@ -14,21 +14,27 @@ export default function LoginPage() {
     setStatus("checking");
     setErrorMessage("");
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-    if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: "Couldn't sign in." }));
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "Couldn't sign in." }));
+        setStatus("error");
+        setErrorMessage(error ?? "Couldn't sign in.");
+        return;
+      }
+
+      router.replace("/");
+      router.refresh();
+      setStatus("idle");
+    } catch {
       setStatus("error");
-      setErrorMessage(error ?? "Couldn't sign in.");
-      return;
+      setErrorMessage("Couldn't reach the server. Check your connection and try again.");
     }
-
-    router.replace("/");
-    router.refresh();
   }
 
   return (
