@@ -37,8 +37,20 @@ create table if not exists shopify_order (
 
 create index if not exists shopify_order_influencer_id_idx on shopify_order (influencer_id);
 
+-- Single-row table holding the Shopify OAuth token for the connected store.
+-- Only ever read/written by server-side code using the service_role key — never exposed to the browser.
+create table if not exists shopify_shop (
+  id              int primary key default 1,
+  shop_domain     text not null,
+  access_token    text not null,
+  installed_at    timestamptz not null default now(),
+  last_synced_at  timestamptz,
+  constraint shopify_shop_singleton check (id = 1)
+);
+
 alter table influencer enable row level security;
 alter table shopify_order enable row level security;
+alter table shopify_shop enable row level security;
 
 -- Any logged-in team member (see SETUP.md for how logins are restricted) can read/write the dashboard data.
 create policy "authenticated read influencer" on influencer for select to authenticated using (true);
@@ -46,6 +58,9 @@ create policy "authenticated write influencer" on influencer for insert to authe
 create policy "authenticated update influencer" on influencer for update to authenticated using (true);
 
 create policy "authenticated read shopify_order" on shopify_order for select to authenticated using (true);
+
+-- No policies on shopify_shop: it is only ever accessed via the service_role key (bypasses RLS),
+-- so it stays unreadable to every browser client, authenticated or not.
 
 alter publication supabase_realtime add table influencer;
 alter publication supabase_realtime add table shopify_order;

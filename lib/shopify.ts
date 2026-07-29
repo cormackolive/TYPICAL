@@ -1,4 +1,52 @@
+import crypto from "crypto";
+
 export const SHOPIFY_API_VERSION = "2024-10";
+export const SHOPIFY_SCOPES = "read_orders,read_customers";
+
+export function shopifyAuthorizeUrl(params: { shop: string; state: string; redirectUri: string }) {
+  const url = new URL(`https://${params.shop}/admin/oauth/authorize`);
+  url.searchParams.set("client_id", process.env.SHOPIFY_CLIENT_ID!);
+  url.searchParams.set("scope", SHOPIFY_SCOPES);
+  url.searchParams.set("redirect_uri", params.redirectUri);
+  url.searchParams.set("state", params.state);
+  return url.toString();
+}
+
+/** Verifies the HMAC Shopify attaches to every OAuth callback request. */
+export function verifyShopifyHmac(searchParams: URLSearchParams): boolean {
+  const provided = searchParams.get("hmac");
+  if (!provided) return false;
+
+  const message = Array.from(searchParams.entries())
+    .filter(([key]) => key !== "hmac" && key !== "signature")
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+
+  const computed = crypto
+    .createHmac("sha256", process.env.SHOPIFY_CLIENT_SECRET!)
+    .update(message)
+    .digest("hex");
+
+  const a = Buffer.from(provided);
+  const b = Buffer.from(computed);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+export async function exchangeShopifyCode(shop: string, code: string): Promise<string> {
+  const res = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: process.env.SHOPIFY_CLIENT_ID,
+      client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+      code,
+    }),
+  });
+  if (!res.ok) throw new Error(`Shopify token exchange failed: ${res.status} ${await res.text()}`);
+  const json = await res.json();
+  return json.access_token as string;
+}
 
 interface ShopifyLineItem {
   title: string;

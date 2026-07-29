@@ -4,10 +4,9 @@ This app is code only until you connect it to Supabase, Vercel, and Shopify. Non
 steps below involve pasting secrets into a chat — every credential goes directly into
 the Supabase, Vercel, or Shopify dashboard.
 
-**Important:** if you previously pasted a Shopify Client Secret into a chat conversation,
-rotate it in your Shopify Partner/Dev Dashboard (App -> Settings -> Credentials ->
-"Rotate" next to Secret). This app doesn't actually use that Client ID/Secret pair though —
-see the Shopify section below for the simpler token this app uses instead.
+**Important:** you previously pasted a Shopify Client Secret into a chat conversation.
+Once this app is set up, rotate that secret in your Shopify Partner Dashboard
+(App -> API credentials -> "Rotate client secret") and use the new one below.
 
 ## 1. Supabase — the database
 
@@ -35,8 +34,11 @@ see the Shopify section below for the simpler token this app uses instead.
    - `NEXT_PUBLIC_SUPABASE_URL` — from Supabase step 3
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — from Supabase step 3
    - `SUPABASE_SERVICE_ROLE_KEY` — from Supabase step 3
+   - `SHOPIFY_APP_URL` — your Vercel deployment URL, e.g. `https://typical-xyz.vercel.app`
+     (Vercel shows you this after the first deploy — you can add this var and redeploy after)
    - `SHOPIFY_SHOP_DOMAIN` — e.g. `your-store.myshopify.com`
-   - `SHOPIFY_ADMIN_ACCESS_TOKEN` — from the Shopify section below
+   - `SHOPIFY_CLIENT_ID` — from your Shopify app
+   - `SHOPIFY_CLIENT_SECRET` — from your Shopify app (rotate it first, see note above)
    - `CRON_SECRET` — make up any long random string (e.g. run `openssl rand -hex 32`
      in a terminal) and paste the result here. Vercel automatically sends this as a
      Bearer token to your own cron endpoint, so nobody else can trigger it.
@@ -45,24 +47,13 @@ see the Shopify section below for the simpler token this app uses instead.
 
 ## 3. Shopify — connect your store
 
-For a single internal store like this, a **Custom App** access token is the simplest and
-standard approach — created directly in your store's admin, no OAuth or redirect URLs
-needed (that's a different, more complex flow meant for apps other people install into
-their own separate stores).
-
-1. Log into your store's admin at `https://your-store.myshopify.com/admin`.
-2. Go to **Settings** (bottom of the left sidebar) -> **Apps and sales channels**.
-3. Click **Develop apps** (top right). If you see a one-time "Allow custom app
-   development" button, click it.
-4. Click **Create an app**, name it something like "Influencer Dashboard Sync".
-5. Click **Configure Admin API scopes**, and check the boxes for:
-   - `read_orders`
-   - `read_customers`
-   Click **Save**.
-6. Click the **API credentials** tab, then click **Install app** (top right), confirm.
-7. Under **Admin API access token**, click **Reveal token once** and copy it immediately —
-   Shopify only shows it this one time. Paste it directly into Vercel's
-   `SHOPIFY_ADMIN_ACCESS_TOKEN` variable, not into this chat.
+1. In the Shopify Partner Dashboard, open your app's **API credentials** page.
+2. Under **App URL**, set it to your `SHOPIFY_APP_URL` value.
+3. Under **Allowed redirection URL(s)**, add: `{SHOPIFY_APP_URL}/api/shopify/callback`
+   (exact match, including `https://`).
+4. Visit `{SHOPIFY_APP_URL}/api/shopify/install` once in your browser (you'll need to be
+   logged into the Shopify store's admin). Approve the requested permissions. You'll be
+   redirected back to the dashboard once it's connected.
 
 ## 4. Turn on the sync job
 
@@ -73,7 +64,7 @@ that's the most frequent cron Vercel allows on its free **Hobby** plan.
   `"*/10 * * * *"` (every 10 minutes) and redeploy.
 - **If you're on Hobby and want faster syncing without upgrading**, use a free
   external scheduler like cron-job.org to send a request every 5-10 minutes to
-  `https://your-app.vercel.app/api/cron/sync-shopify` with the header
+  `{SHOPIFY_APP_URL}/api/cron/sync-shopify` with the header
   `Authorization: Bearer <your CRON_SECRET value>`.
 
 You can also trigger a sync manually any time by visiting that URL yourself with the

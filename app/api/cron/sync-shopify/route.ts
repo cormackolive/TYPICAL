@@ -18,21 +18,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const shop = process.env.SHOPIFY_SHOP_DOMAIN;
-  const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-  if (!shop || !accessToken) {
-    return NextResponse.json(
-      { error: "Set SHOPIFY_SHOP_DOMAIN and SHOPIFY_ADMIN_ACCESS_TOKEN in your environment variables first." },
-      { status: 500 }
-    );
-  }
+  const supabase = createAdminClient();
+
+  const { data: shop, error: shopError } = await supabase.from("shopify_shop").select("*").eq("id", 1).maybeSingle();
+  if (shopError) return NextResponse.json({ error: shopError.message }, { status: 500 });
+  if (!shop) return NextResponse.json({ message: "Shopify not connected yet — visit /api/shopify/install." });
 
   const runStartedAt = new Date();
-  // Always looks back 24h — upserts are idempotent, so re-scanning already-synced orders is harmless.
-  const updatedAtMin = new Date(runStartedAt.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const updatedAtMin = shop.last_synced_at
+    ? new Date(new Date(shop.last_synced_at).getTime() - 5 * 60 * 1000).toISOString()
+    : new Date(runStartedAt.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
-  const supabase = createAdminClient();
-  const orders = await fetchRecentShopifyOrders(shop, accessToken, updatedAtMin);
+  const orders = await fetchRecentShopifyOrders(shop.shop_domain, shop.access_token, updatedAtMin);
   const matching = orders.filter((o) => orderTagsMatch(o.tags));
 
   let created = 0;
@@ -75,6 +72,8 @@ export async function GET(request: Request) {
     );
     if (!orderError) updated++;
   }
+
+  await supabase.from("shopify_shop").update({ last_synced_at: runStartedAt.toISOString() }).eq("id", 1);
 
   return NextResponse.json({ scanned: orders.length, matching: matching.length, influencersCreated: created, ordersUpserted: updated });
 }
