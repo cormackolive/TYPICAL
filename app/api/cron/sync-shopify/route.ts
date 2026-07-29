@@ -12,9 +12,26 @@ import {
 
 export const maxDuration = 60;
 
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
+
 export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Vercel's scheduled cron sends the secret as a header; a manually-visited
+  // browser link can't set headers, so a `?secret=` query param is also accepted.
+  const querySecret = new URL(request.url).searchParams.get("secret");
+
+  const authorized =
+    !!secret &&
+    ((auth !== null && timingSafeEqualStr(auth, `Bearer ${secret}`)) ||
+      (querySecret !== null && timingSafeEqualStr(querySecret, secret)));
+
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
