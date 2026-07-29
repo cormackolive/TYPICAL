@@ -20,16 +20,16 @@ function timingSafeEqualStr(a: string, b: string): boolean {
 }
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  const secret = process.env.CRON_SECRET?.trim();
   const auth = request.headers.get("authorization");
   // Vercel's scheduled cron sends the secret as a header; a manually-visited
   // browser link can't set headers, so a `?secret=` query param is also accepted.
-  const querySecret = new URL(request.url).searchParams.get("secret");
+  const querySecret = new URL(request.url).searchParams.get("secret")?.trim();
 
   const authorized =
     !!secret &&
-    ((auth !== null && timingSafeEqualStr(auth, `Bearer ${secret}`)) ||
-      (querySecret !== null && timingSafeEqualStr(querySecret, secret)));
+    ((!!auth && timingSafeEqualStr(auth, `Bearer ${secret}`)) ||
+      (!!querySecret && timingSafeEqualStr(querySecret, secret)));
 
   if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
