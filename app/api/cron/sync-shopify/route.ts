@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   fetchRecentShopifyOrders,
-  orderTagsMatch,
+  orderMatchesInfluencerCriteria,
   deriveFulfillmentStatus,
   customerName,
   shippingAddressLabel,
@@ -12,9 +12,26 @@ import {
 
 export const maxDuration = 60;
 
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
+
 export async function GET(request: Request) {
+  const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Vercel's scheduled cron sends the secret as a header; a manually-visited
+  // browser link can't set headers, so a `?secret=` query param is also accepted.
+  const querySecret = new URL(request.url).searchParams.get("secret");
+
+  const authorized =
+    !!secret &&
+    ((auth !== null && timingSafeEqualStr(auth, `Bearer ${secret}`)) ||
+      (querySecret !== null && timingSafeEqualStr(querySecret, secret)));
+
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,12 +42,14 @@ export async function GET(request: Request) {
   if (!shop) return NextResponse.json({ message: "Shopify not connected yet — visit /api/shopify/install." });
 
   const runStartedAt = new Date();
+  // First-ever sync: fetch full order history so past orders aren't missed.
+  // After that, only fetch what's changed since the last run.
   const updatedAtMin = shop.last_synced_at
     ? new Date(new Date(shop.last_synced_at).getTime() - 5 * 60 * 1000).toISOString()
-    : new Date(runStartedAt.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    : undefined;
 
   const orders = await fetchRecentShopifyOrders(shop.shop_domain, shop.access_token, updatedAtMin);
-  const matching = orders.filter((o) => orderTagsMatch(o.tags));
+  const matching = orders.filter(orderMatchesInfluencerCriteria);
 
   let created = 0;
   let updated = 0;
