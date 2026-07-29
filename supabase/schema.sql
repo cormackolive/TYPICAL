@@ -32,10 +32,28 @@ create table if not exists shopify_order (
   tracking            text,
   order_date          date,
   tags                text[] not null default '{}',
+  line_items_total    numeric,
   last_synced_at      timestamptz not null default now()
 );
 
+-- Safe to re-run: adds the column if this table already existed before it was introduced.
+alter table shopify_order add column if not exists line_items_total numeric;
+
 create index if not exists shopify_order_influencer_id_idx on shopify_order (influencer_id);
+
+create table if not exists assignment (
+  id                 uuid primary key default gen_random_uuid(),
+  influencer_name    text,
+  team_member        text,
+  message            text,
+  due_date           date,
+  status             text not null default 'Pending' check (status in ('Pending', 'In progress', 'Complete')),
+  created_at         timestamptz not null default now()
+);
+
+alter table assignment enable row level security;
+-- No policies: this table is only ever accessed via the service_role key from
+-- server code (see app/api/assignments), consistent with influencer/shopify_order.
 
 -- Single-row table holding the Shopify OAuth token for the connected store.
 -- Only ever read/written by server-side code using the service_role key — never exposed to the browser.

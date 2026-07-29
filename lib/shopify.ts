@@ -36,6 +36,7 @@ interface ShopifyLineItem {
   title: string;
   variant_title: string | null;
   quantity: number;
+  price: string;
 }
 
 interface ShopifyFulfillment {
@@ -84,6 +85,7 @@ export async function fetchRecentShopifyOrders(
   const updatedAtParam = updatedAtMin ? `&updated_at_min=${encodeURIComponent(updatedAtMin)}` : "";
   let url: string | null =
     `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/orders.json?status=any&limit=250${updatedAtParam}&fields=${encodeURIComponent(
+      // Requesting "line_items" returns each item's full object, price included, by default.
       "id,name,created_at,tags,discount_codes,fulfillment_status,fulfillments,line_items,customer,shipping_address"
     )}`;
 
@@ -144,6 +146,11 @@ export function itemsSummary(order: ShopifyOrder): string {
       return `${li.title}${variant}${qty}`;
     })
     .join(", ");
+}
+
+/** Sum of line-item price × quantity — used as the order's WSP contribution. */
+export function lineItemsTotal(order: ShopifyOrder): number {
+  return order.line_items.reduce((sum, li) => sum + Number(li.price) * li.quantity, 0);
 }
 
 export function trackingLabel(order: ShopifyOrder): string | null {

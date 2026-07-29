@@ -51,10 +51,22 @@ export default function NavBar({ section }: { section: string }) {
           {section}
         </span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {section !== "Home" && (
-          <a href="/" className="tg-link" style={{ fontSize: 13 }}>
-            ← Back to Dashboard
+          <a
+            href="/"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--fg-2)",
+              border: "2px solid var(--typical-black)",
+              padding: "8px 12px",
+              textDecoration: "none",
+            }}
+          >
+            ← Back
           </a>
         )}
         <button className="tg-btn" onClick={handleLogout} disabled={loggingOut}>

@@ -1,17 +1,17 @@
 :root {
-  --bg-1: #fbf8f3;
-  --typical-ink: #17110d;
+  --bg-1: #f3efe9;
+  --typical-ink: #121111;
   --typical-black: #000000;
   --typical-orange: #f15a29;
   --fg-1: var(--typical-ink);
-  --fg-2: #6b6259;
+  --fg-2: #aaaaaa;
 
   --border-hair: 1px solid rgba(17, 17, 17, 0.18);
   --border-line: 1.5px solid rgba(17, 17, 17, 0.35);
   --border-chunky: 3px solid #000;
 
   --dur-1: 140ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {

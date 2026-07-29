@@ -1,111 +1,79 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import { Chart, type ChartConfiguration } from "chart.js/auto";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchInfluencers, latestOrder } from "@/lib/data";
+import { computeStatus, type Status } from "@/lib/status";
 import NavBar from "@/components/NavBar";
+import AnalyticsCharts from "@/components/AnalyticsCharts";
 
-// Mock data — not yet wired to real Shopify/influencer data.
-const KPIS = [
-  { label: "Total PR Spend (RRP)", value: "$12,450" },
-  { label: "Total WSP", value: "$8,320" },
-  { label: "Total Influencers", value: "35" },
-  { label: "Content Posted", value: "12" },
-  { label: "Awaiting Follow-up", value: "8" },
-];
+export const dynamic = "force-dynamic";
 
-const PALETTE = {
-  orange: "#F15A29",
-  pink: "#EFA8C4",
-  gold: "#EFC988",
-  olive: "#DDE2C0",
-  cream: "#F3EFE9",
-};
+const FULFILLMENT_KEYS = ["Delivered", "Partially complete / In transit", "Unfulfilled"] as const;
 
-function useChart(canvasRef: React.RefObject<HTMLCanvasElement | null>, config: ChartConfiguration) {
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const chart = new Chart(canvasRef.current, config);
-    return () => chart.destroy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-}
+export default async function AnalyticsPage() {
+  const supabase = createAdminClient();
+  const influencers = await fetchInfluencers(supabase);
 
-export default function AnalyticsPage() {
-  const contentStatusRef = useRef<HTMLCanvasElement>(null);
-  const fulfillmentRef = useRef<HTMLCanvasElement>(null);
-  const byMonthRef = useRef<HTMLCanvasElement>(null);
-
-  useChart(contentStatusRef, {
-    type: "doughnut",
-    data: {
-      labels: ["Posted", "Delivered (awaiting)", "In transit", "Unfulfilled"],
-      datasets: [{ data: [12, 8, 10, 5], backgroundColor: [PALETTE.pink, PALETTE.olive, PALETTE.gold, PALETTE.cream] }],
-    },
-    options: { plugins: { legend: { position: "bottom" } } },
+  const statusCounts: Record<Status, number> = { unfulfilled: 0, in_transit: 0, follow_up: 0, posted: 0 };
+  influencers.forEach((inf) => {
+    statusCounts[computeStatus(inf, latestOrder(inf))]++;
   });
 
-  useChart(fulfillmentRef, {
-    type: "doughnut",
-    data: {
-      labels: ["Delivered", "In transit", "Unfulfilled"],
-      datasets: [{ data: [18, 10, 7], backgroundColor: [PALETTE.olive, PALETTE.gold, PALETTE.cream] }],
-    },
-    options: { plugins: { legend: { position: "bottom" } } },
+  const allOrders = influencers.flatMap((inf) => inf.shopify_order);
+
+  const fulfillmentCounts: Record<(typeof FULFILLMENT_KEYS)[number], number> = {
+    Delivered: 0,
+    "Partially complete / In transit": 0,
+    Unfulfilled: 0,
+  };
+  let totalWsp = 0;
+  allOrders.forEach((o) => {
+    if (o.fulfillment_status) fulfillmentCounts[o.fulfillment_status]++;
+    totalWsp += Number(o.line_items_total ?? 0);
   });
 
-  useChart(byMonthRef, {
-    type: "bar",
-    data: {
-      labels: ["June", "July", "August"],
-      datasets: [{ label: "Influencers", data: [9, 14, 12], backgroundColor: PALETTE.orange }],
-    },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
-  });
+  const now = new Date();
+  const monthLabels: string[] = [];
+  const monthCounts: number[] = [];
+  for (let i = 2; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    monthLabels.push(d.toLocaleString("en-US", { month: "long" }));
+    const count = influencers.filter((inf) => {
+      const created = new Date(inf.created_at);
+      return created.getFullYear() === d.getFullYear() && created.getMonth() === d.getMonth();
+    }).length;
+    monthCounts.push(count);
+  }
+
+  const kpis = [
+    { label: "Total PR Spend (RRP)", value: "$12,450" },
+    { label: "Total WSP", value: `$${Math.round(totalWsp).toLocaleString()}` },
+    { label: "Total Influencers", value: String(influencers.length) },
+    { label: "Content Posted", value: String(statusCounts.posted) },
+    { label: "Awaiting Follow-up", value: String(statusCounts.follow_up) },
+  ];
 
   return (
     <div className="typical" style={{ minHeight: "100vh", background: "var(--bg-1)", fontFamily: "var(--font-sans)" }}>
       <NavBar section="Analytics" />
 
-      <div style={{ padding: "48px 40px 24px" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: "-0.01em", marginBottom: 8 }}>
+      <div style={{ padding: "48px 40px 8px" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: "-0.01em", lineHeight: 1.1, marginBottom: 12 }}>
           Campaign Performance
         </div>
-        <div style={{ fontSize: 14, color: "var(--fg-2)" }}>
-          A snapshot of gifting spend and content performance. Sample data — not yet wired to live totals.
-        </div>
+        <div style={{ fontSize: 16, color: "var(--fg-2)" }}>Track PR spend, content metrics, and influencer performance.</div>
       </div>
 
-      <div style={{ padding: "0 40px 32px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
-        {KPIS.map((k) => (
-          <div key={k.label} style={{ border: "2px solid var(--typical-black)", padding: 18, background: "var(--bg-1)" }}>
-            <div style={{ fontFamily: "var(--font-editorial)", fontSize: 26, marginBottom: 4 }}>{k.value}</div>
-            <div style={{ fontSize: 12, letterSpacing: "0.04em", color: "var(--fg-2)", textTransform: "uppercase" }}>
-              {k.label}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ padding: "0 40px 80px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 24 }}>
-        <div style={{ border: "var(--border-line)", padding: 20 }}>
-          <div style={{ fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--fg-2)", marginBottom: 12 }}>
-            Content Status
-          </div>
-          <canvas ref={contentStatusRef} height={220} />
-        </div>
-        <div style={{ border: "var(--border-line)", padding: 20 }}>
-          <div style={{ fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--fg-2)", marginBottom: 12 }}>
-            Order Fulfillment Status
-          </div>
-          <canvas ref={fulfillmentRef} height={220} />
-        </div>
-        <div style={{ border: "var(--border-line)", padding: 20 }}>
-          <div style={{ fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--fg-2)", marginBottom: 12 }}>
-            Influencers by Month
-          </div>
-          <canvas ref={byMonthRef} height={220} />
-        </div>
-      </div>
+      <AnalyticsCharts
+        kpis={kpis}
+        contentStatus={{
+          Posted: statusCounts.posted,
+          "Delivered (awaiting)": statusCounts.follow_up,
+          "In transit": statusCounts.in_transit,
+          Unfulfilled: statusCounts.unfulfilled,
+        }}
+        fulfillment={fulfillmentCounts}
+        monthLabels={monthLabels}
+        monthCounts={monthCounts}
+      />
     </div>
   );
 }
