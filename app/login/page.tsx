@@ -1,32 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<"idle" | "checking" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("sending");
+    setStatus("checking");
     setErrorMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
     });
 
-    if (error) {
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: "Couldn't sign in." }));
       setStatus("error");
-      setErrorMessage(error.message);
+      setErrorMessage(error ?? "Couldn't sign in.");
       return;
     }
-    setStatus("sent");
+
+    router.replace("/");
+    router.refresh();
   }
 
   return (
@@ -63,36 +65,30 @@ export default function LoginPage() {
           Influencer Gifting — Team Login
         </div>
 
-        {status === "sent" ? (
-          <p style={{ fontSize: 14, color: "var(--fg-1)" }}>
-            Check <strong>{email}</strong> for a sign-in link. You can close this tab.
-          </p>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <input
-              className="tg-input"
-              type="email"
-              required
-              placeholder="you@typical.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ width: "100%", marginBottom: 12, boxSizing: "border-box" }}
-            />
-            <button
-              type="submit"
-              className="tg-btn tg-btn-done"
-              disabled={status === "sending"}
-              style={{ width: "100%" }}
-            >
-              {status === "sending" ? "Sending…" : "Send sign-in link"}
-            </button>
-            {status === "error" && (
-              <p style={{ fontSize: 13, color: "var(--typical-orange)", marginTop: 10 }}>
-                {errorMessage || "Couldn't send link. Ask an admin to invite your email in Supabase."}
-              </p>
-            )}
-          </form>
-        )}
+        <form onSubmit={handleSubmit}>
+          <input
+            className="tg-input"
+            type="password"
+            required
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: "100%", marginBottom: 12, boxSizing: "border-box" }}
+          />
+          <button
+            type="submit"
+            className="tg-btn tg-btn-done"
+            disabled={status === "checking"}
+            style={{ width: "100%" }}
+          >
+            {status === "checking" ? "Checking…" : "Sign in"}
+          </button>
+          {status === "error" && (
+            <p style={{ fontSize: 13, color: "var(--typical-orange)", marginTop: 10 }}>
+              {errorMessage}
+            </p>
+          )}
+        </form>
       </div>
     </div>
   );
