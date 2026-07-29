@@ -65,22 +65,25 @@ export interface ShopifyOrder {
   } | null;
 }
 
-/** Fetches orders updated since `updatedAtMin`, following pagination up to a sane cap. */
+/**
+ * Fetches orders, following pagination up to a sane cap. Pass `updatedAtMin` to
+ * only fetch orders touched since then (incremental sync); omit it entirely to
+ * fetch full order history (first-time backfill).
+ */
 export async function fetchRecentShopifyOrders(
   shop: string,
   accessToken: string,
-  updatedAtMin: string
+  updatedAtMin?: string
 ): Promise<ShopifyOrder[]> {
   const orders: ShopifyOrder[] = [];
+  const updatedAtParam = updatedAtMin ? `&updated_at_min=${encodeURIComponent(updatedAtMin)}` : "";
   let url: string | null =
-    `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/orders.json?status=any&limit=250&updated_at_min=${encodeURIComponent(
-      updatedAtMin
-    )}&fields=${encodeURIComponent(
+    `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/orders.json?status=any&limit=250${updatedAtParam}&fields=${encodeURIComponent(
       "id,name,created_at,tags,fulfillment_status,fulfillments,line_items,customer,shipping_address"
     )}`;
 
   let pages = 0;
-  while (url && pages < 10) {
+  while (url && pages < 40) {
     const res: Response = await fetch(url, {
       headers: { "X-Shopify-Access-Token": accessToken },
     });

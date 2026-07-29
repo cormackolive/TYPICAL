@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { fetchInfluencers, latestOrder } from "@/lib/data";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { latestOrder } from "@/lib/data";
 import type { InfluencerDb } from "@/lib/types";
 import {
   computeStatus,
@@ -15,33 +14,23 @@ import InfluencerCard from "./InfluencerCard";
 import InfluencerModal from "./InfluencerModal";
 
 export default function Dashboard({ initialInfluencers }: { initialInfluencers: InfluencerDb[] }) {
-  const supabase = useMemo(() => createClient(), []);
   const [influencers, setInfluencers] = useState<InfluencerDb[]>(initialInfluencers);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refetch = useCallback(() => {
-    if (refetchTimer.current) clearTimeout(refetchTimer.current);
-    refetchTimer.current = setTimeout(async () => {
-      const data = await fetchInfluencers(supabase);
-      setInfluencers(data);
-    }, 300);
-  }, [supabase]);
+  const refetch = useCallback(async () => {
+    const res = await fetch("/api/influencers");
+    if (res.ok) setInfluencers(await res.json());
+  }, []);
 
+  // No realtime subscription (that requires Supabase-authenticated access, which
+  // this app no longer has — see middleware.ts). Poll instead.
   useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "influencer" }, refetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "shopify_order" }, refetch)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, refetch]);
+    const interval = setInterval(refetch, 20_000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   const rows = useMemo(
     () =>
@@ -103,10 +92,14 @@ export default function Dashboard({ initialInfluencers }: { initialInfluencers: 
   async function handleSave(patch: Partial<InfluencerDb>) {
     if (!selectedId) return;
     setInfluencers((prev) => prev.map((inf) => (inf.id === selectedId ? { ...inf, ...patch } : inf)));
-    const { error } = await supabase.from("influencer").update(patch).eq("id", selectedId);
-    if (error) {
+    const res = await fetch(`/api/influencers/${selectedId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) {
       // eslint-disable-next-line no-console
-      console.error("Failed to save:", error.message);
+      console.error("Failed to save:", await res.text());
       refetch();
     }
   }

@@ -52,7 +52,10 @@ alter table influencer enable row level security;
 alter table shopify_order enable row level security;
 alter table shopify_shop enable row level security;
 
--- Any logged-in team member (see SETUP.md for how logins are restricted) can read/write the dashboard data.
+-- These "authenticated" policies are intentionally dead weight: the app no longer creates
+-- Supabase Auth sessions (access is gated by a shared password in middleware.ts instead),
+-- so they never match anyone. That's correct — it means the anon key can't read/write
+-- anything. All real app access goes through server code using the service_role key.
 create policy "authenticated read influencer" on influencer for select to authenticated using (true);
 create policy "authenticated write influencer" on influencer for insert to authenticated with check (true);
 create policy "authenticated update influencer" on influencer for update to authenticated using (true);
