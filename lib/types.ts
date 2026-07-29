@@ -9,7 +9,18 @@ export interface ShopifyOrderDb {
   tracking: string | null;
   order_date: string | null;
   tags: string[];
+  line_items_total: number | null;
   last_synced_at: string;
+}
+
+export interface AssignmentDb {
+  id: string;
+  influencer_name: string | null;
+  team_member: string | null;
+  message: string | null;
+  due_date: string | null;
+  status: "Pending" | "In progress" | "Complete";
+  created_at: string;
 }
 
 export interface InfluencerDb {

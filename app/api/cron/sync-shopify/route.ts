@@ -8,6 +8,7 @@ import {
   shippingAddressLabel,
   itemsSummary,
   trackingLabel,
+  lineItemsTotal,
 } from "@/lib/shopify";
 
 export const maxDuration = 60;
@@ -85,6 +86,7 @@ export async function GET(request: Request) {
         tracking: trackingLabel(order),
         order_date: order.created_at.slice(0, 10),
         tags: order.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        line_items_total: lineItemsTotal(order),
         last_synced_at: runStartedAt.toISOString(),
       },
       { onConflict: "shopify_order_id" }
