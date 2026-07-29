@@ -36,11 +36,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${editorial.variable} ${sans.variable}`}>
       <head>
-        {/* This is a standalone app, not embedded — if Shopify (or anything else) frames
-            it in an iframe, login breaks because the session cookie can't reliably be
-            set/read cross-site. Break out to a normal top-level tab instead. */}
+        {/* This is a standalone app, not embedded — if Shopify frames it in an admin
+            iframe, login breaks because the session cookie can't reliably be set/read
+            cross-site there. Shopify's iframe is sandboxed against plain JS top-navigation
+            (window.top.location doesn't work), so breaking out requires App Bridge itself —
+            it must be the very first script tag, with the API key meta tag before it. */}
+        <meta name="shopify-api-key" content={process.env.SHOPIFY_CLIENT_ID ?? ""} />
+        <Script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" strategy="beforeInteractive" />
         <Script id="break-out-of-iframe" strategy="beforeInteractive">
-          {`if (window.top !== window.self) { window.top.location.href = window.self.location.href; }`}
+          {`if (window.top !== window.self) { window.open(window.self.location.href, "_top"); }`}
         </Script>
       </head>
       <body>{children}</body>
