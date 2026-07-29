@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Fraunces, Archivo } from "next/font/google";
 import "./globals.css";
 
@@ -34,6 +35,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${editorial.variable} ${sans.variable}`}>
+      <head>
+        {/* This is a standalone app, not embedded — if Shopify (or anything else) frames
+            it in an iframe, login breaks because the session cookie can't reliably be
+            set/read cross-site. Break out to a normal top-level tab instead. */}
+        <Script id="break-out-of-iframe" strategy="beforeInteractive">
+          {`if (window.top !== window.self) { window.top.location.href = window.self.location.href; }`}
+        </Script>
+      </head>
       <body>{children}</body>
     </html>
   );
