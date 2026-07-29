@@ -3,9 +3,16 @@ import crypto from "crypto";
 export const SHOPIFY_API_VERSION = "2024-10";
 export const SHOPIFY_SCOPES = "read_orders,read_customers";
 
+/** Env vars are trimmed defensively — a stray trailing space/newline from copy-pasting into Vercel is a common, invisible cause of auth failures. */
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value.trim();
+}
+
 export function shopifyAuthorizeUrl(params: { shop: string; state: string; redirectUri: string }) {
   const url = new URL(`https://${params.shop}/admin/oauth/authorize`);
-  url.searchParams.set("client_id", process.env.SHOPIFY_CLIENT_ID!);
+  url.searchParams.set("client_id", requiredEnv("SHOPIFY_CLIENT_ID"));
   url.searchParams.set("scope", SHOPIFY_SCOPES);
   url.searchParams.set("redirect_uri", params.redirectUri);
   url.searchParams.set("state", params.state);
@@ -24,7 +31,7 @@ export function verifyShopifyHmac(searchParams: URLSearchParams): boolean {
     .join("&");
 
   const computed = crypto
-    .createHmac("sha256", process.env.SHOPIFY_CLIENT_SECRET!)
+    .createHmac("sha256", requiredEnv("SHOPIFY_CLIENT_SECRET"))
     .update(message)
     .digest("hex");
 
@@ -38,8 +45,8 @@ export async function exchangeShopifyCode(shop: string, code: string): Promise<s
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      client_id: process.env.SHOPIFY_CLIENT_ID,
-      client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+      client_id: requiredEnv("SHOPIFY_CLIENT_ID"),
+      client_secret: requiredEnv("SHOPIFY_CLIENT_SECRET"),
       code,
     }),
   });
