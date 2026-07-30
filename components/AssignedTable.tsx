@@ -18,6 +18,7 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
   const [memberFilter, setMemberFilter] = useState<string>("all");
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
 
   const filtered = useMemo(
     () => (memberFilter === "all" ? assignments : assignments.filter((a) => a.team_member === memberFilter)),
@@ -36,17 +37,26 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
   async function addAssignment(e: React.FormEvent) {
     e.preventDefault();
     setAdding(true);
-    const res = await fetch("/api/assignments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
-    });
-    if (res.ok) {
+    setAddError("");
+    try {
+      const res = await fetch("/api/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: `Request failed (${res.status})` }));
+        setAddError(error ?? `Request failed (${res.status})`);
+        return;
+      }
       const created = await res.json();
       setAssignments((prev) => [created, ...prev]);
       setDraft(EMPTY_DRAFT);
+    } catch {
+      setAddError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   }
 
   const cellInputStyle: React.CSSProperties = {
@@ -119,6 +129,9 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
             {adding ? "Adding…" : "Add"}
           </button>
         </form>
+        {addError && (
+          <p style={{ fontSize: 13, color: "var(--typical-orange)", marginTop: 10 }}>{addError}</p>
+        )}
       </div>
 
       <div style={{ padding: "0 40px 80px" }}>
