@@ -1,4 +1,5 @@
 import NavBar from "@/components/NavBar";
+import NotificationsPopup from "@/components/NotificationsPopup";
 
 const SECTIONS = [
   {
@@ -9,8 +10,8 @@ const SECTIONS = [
   },
   {
     href: "/assigned",
-    icon: "Assign",
-    title: "Assigned",
+    icon: "To-Do",
+    title: "Task Manager",
     desc: "Review tasks and follow-ups assigned across the team, and mark them done.",
   },
   {
@@ -23,13 +24,13 @@ const SECTIONS = [
     href: "/dms",
     icon: "DMs",
     title: "Messages",
-    desc: "Direct message inbox — coming soon.",
+    desc: "Instagram DM inbox, quick replies, and automation rules.",
   },
   {
     href: "/emails",
     icon: "Email",
     title: "Email",
-    desc: "Email inbox — coming soon.",
+    desc: "Email inbox, replies, and automation rules.",
   },
 ];
 
@@ -78,6 +79,7 @@ export default function HomePage() {
   return (
     <div className="typical" style={{ minHeight: "100vh", background: "var(--bg-1)", fontFamily: "var(--font-sans)" }}>
       <PolkaDots />
+      <NotificationsPopup />
 
       {/* Sits above the fixed polka-dot layer via its own stacking context. */}
       <div style={{ position: "relative", zIndex: 1 }}>
