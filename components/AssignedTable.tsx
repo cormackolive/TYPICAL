@@ -9,8 +9,6 @@ const STATUS_SWATCH: Record<AssignmentDb["status"], string> = {
   Complete: "#DDE2C0",
 };
 
-const TEAM_MEMBERS = ["Sarah", "Alex", "Jordan"] as const;
-
 const EMPTY_DRAFT = { influencer_name: "", team_member: "", message: "", due_date: "" };
 
 export default function AssignedTable({ initialAssignments }: { initialAssignments: AssignmentDb[] }) {
@@ -24,6 +22,16 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
     () => (memberFilter === "all" ? assignments : assignments.filter((a) => a.team_member === memberFilter)),
     [assignments, memberFilter]
   );
+
+  // The filter list is built from whatever names people have actually typed
+  // into "Team member" — not a fixed list — so new names show up automatically.
+  const teamMembers = useMemo(() => {
+    const names = new Set<string>();
+    assignments.forEach((a) => {
+      if (a.team_member) names.add(a.team_member);
+    });
+    return Array.from(names).sort();
+  }, [assignments]);
 
   async function patchAssignment(id: string, patch: Partial<AssignmentDb>) {
     setAssignments((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
@@ -81,7 +89,7 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
           onChange={(e) => setMemberFilter(e.target.value)}
         >
           <option value="all">All assignments</option>
-          {TEAM_MEMBERS.map((m) => (
+          {teamMembers.map((m) => (
             <option key={m} value={m}>
               {m}
             </option>
