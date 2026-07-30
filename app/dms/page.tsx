@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NavBar from "@/components/NavBar";
 import SendPrModal from "@/components/SendPrModal";
+import type { AssignmentDb } from "@/lib/types";
 
 interface Thread {
   id: string;
@@ -50,12 +51,14 @@ const THREADS: Thread[] = [
   },
 ];
 
-const TEAM = ["Alice Chen", "James Rodriguez", "Sophie Liu"];
-
 export default function DmsPage() {
   const [tab, setTab] = useState<"messages" | "automation">("messages");
   const [selectedId, setSelectedId] = useState(THREADS[0].id);
   const [assignee, setAssignee] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  const [assignConfirmed, setAssignConfirmed] = useState(false);
+  const [assignError, setAssignError] = useState("");
+  const [teamMembers, setTeamMembers] = useState<string[]>([]);
   const [reply, setReply] = useState("");
   const [showSendPr, setShowSendPr] = useState(false);
   const [automationOn, setAutomationOn] = useState(false);
@@ -63,7 +66,26 @@ export default function DmsPage() {
   const [template, setTemplate] = useState("");
   const [savedRule, setSavedRule] = useState(false);
 
+  // Same team-member list as Task Manager (/assigned) — built from whatever
+  // names have actually been used there, not a fixed list.
+  useEffect(() => {
+    fetch("/api/assignments")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: AssignmentDb[]) => {
+        const names = new Set<string>();
+        data.forEach((a) => {
+          if (a.team_member) names.add(a.team_member);
+        });
+        setTeamMembers(Array.from(names).sort());
+      });
+  }, []);
+
   const selected = THREADS.find((t) => t.id === selectedId)!;
+
+  useEffect(() => {
+    setAssignee("");
+    setAssignConfirmed(false);
+  }, [selectedId]);
 
   function useAiSuggestion() {
     setReply(selected.aiSuggestion);
@@ -72,6 +94,37 @@ export default function DmsPage() {
   function saveRule() {
     setSavedRule(true);
     setTimeout(() => setSavedRule(false), 2000);
+  }
+
+  // Creates a real Task Manager entry — same table/API as the /assigned page.
+  async function assignToTeam(member: string) {
+    setAssignee(member);
+    setAssignConfirmed(false);
+    setAssignError("");
+    if (!member) return;
+    setAssigning(true);
+    try {
+      const res = await fetch("/api/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          influencer_name: selected.name,
+          team_member: member,
+          message: `Follow up on Instagram DM: "${selected.preview}"`,
+        }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: `Request failed (${res.status})` }));
+        setAssignError(error ?? `Request failed (${res.status})`);
+        return;
+      }
+      setTeamMembers((prev) => (prev.includes(member) ? prev : [...prev, member].sort()));
+      setAssignConfirmed(true);
+    } catch {
+      setAssignError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setAssigning(false);
+    }
   }
 
   return (
@@ -136,14 +189,23 @@ export default function DmsPage() {
               <div style={{ marginBottom: 16 }}>
                 <select
                   value={assignee}
-                  onChange={(e) => setAssignee(e.target.value)}
+                  onChange={(e) => assignToTeam(e.target.value)}
+                  disabled={assigning}
                   style={{ width: "100%", fontSize: 12, padding: 12, border: "2px solid var(--typical-black)", background: "white", cursor: "pointer", fontWeight: 600, borderRadius: 4 }}
                 >
                   <option value="">Assign to team</option>
-                  {TEAM.map((m) => (
+                  {teamMembers.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
+                {assignConfirmed && (
+                  <div style={{ fontSize: 12, color: "var(--typical-orange)", marginTop: 6, fontWeight: 600 }}>
+                    ✓ Added to {assignee}&apos;s Task Manager list
+                  </div>
+                )}
+                {assignError && (
+                  <div style={{ fontSize: 12, color: "var(--typical-orange)", marginTop: 6 }}>{assignError}</div>
+                )}
               </div>
 
               <div style={{ padding: 20, border: "2px solid var(--typical-black)", borderBottom: "none", borderRadius: "4px 4px 0 0", background: "#FEFBF8" }}>

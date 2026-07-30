@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireDashboardSession } from "@/lib/auth";
 
 const EDITABLE_FIELDS = ["influencer_name", "team_member", "message", "due_date", "status"] as const;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await requireDashboardSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { id } = await params;
   const body = await request.json();
 

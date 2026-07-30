@@ -32,6 +32,12 @@ const SECTIONS = [
     title: "Email",
     desc: "Email inbox, replies, and automation rules.",
   },
+  {
+    href: "/creator-search",
+    icon: "Search",
+    title: "Creator Search",
+    desc: "Search creators by vibe. Find matches for your campaign.",
+  },
 ];
 
 const DOT_POSITIONS: React.CSSProperties[] = [
