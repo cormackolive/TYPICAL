@@ -51,6 +51,42 @@ const THREADS: Thread[] = [
   },
 ];
 
+const META_COLOR = "rgba(17,17,17,0.62)";
+
+function ToggleSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      style={{
+        width: 56,
+        height: 32,
+        borderRadius: 999,
+        border: "2px solid var(--typical-black)",
+        background: on ? "var(--typical-orange)" : "white",
+        position: "relative",
+        cursor: "pointer",
+        padding: 0,
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: 2,
+          left: on ? 26 : 2,
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          background: on ? "white" : "var(--typical-black)",
+          transition: "left 150ms ease",
+        }}
+      />
+    </button>
+  );
+}
+
 export default function DmsPage() {
   const [tab, setTab] = useState<"messages" | "automation">("messages");
   const [selectedId, setSelectedId] = useState(THREADS[0].id);
@@ -128,30 +164,30 @@ export default function DmsPage() {
   }
 
   return (
-    <div className="typical" style={{ minHeight: "100vh", background: "#FEFBF8", fontFamily: "var(--font-sans)" }}>
+    <div className="typical" style={{ minHeight: "100vh", background: "var(--bg-1)", fontFamily: "var(--font-sans)" }}>
       <NavBar section="Messages" />
 
-      <div style={{ padding: "40px 48px 80px" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: "-0.01em", marginBottom: 20 }}>
-          Messages <span style={{ color: "var(--typical-orange)" }}>— MOCKUP ONLY</span>
+      <div style={{ padding: "40px 48px 80px", maxWidth: 1180, margin: "0 auto" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: "-0.01em", marginBottom: 24 }}>
+          Messages <span style={{ color: "var(--typical-orange)", fontSize: 18 }}>— MOCKUP ONLY</span>
         </div>
-        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--fg-2)", marginBottom: 32 }}>
+
+        <div style={{ display: "flex", gap: 4, marginBottom: 32, borderBottom: "2px solid rgba(17,17,17,0.12)" }}>
           {(["messages", "automation"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: 13,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                padding: "12px 16px",
+                fontSize: 15,
+                padding: "12px 20px",
                 border: "none",
                 background: "transparent",
-                borderBottom: tab === t ? "2px solid var(--typical-orange)" : "2px solid transparent",
-                color: tab === t ? "var(--fg-1)" : "var(--fg-2)",
+                borderBottom: tab === t ? "3px solid var(--typical-orange)" : "3px solid transparent",
+                marginBottom: -2,
+                color: tab === t ? "var(--fg-1)" : META_COLOR,
                 cursor: "pointer",
-                fontWeight: tab === t ? 600 : 400,
+                fontWeight: tab === t ? 700 : 500,
               }}
             >
               {t === "messages" ? "Messages" : "Automation"}
@@ -160,169 +196,229 @@ export default function DmsPage() {
         </div>
 
         {tab === "messages" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 32, minHeight: 600 }}>
-            <div style={{ border: "2px solid var(--typical-black)", borderRadius: 4, overflow: "hidden", background: "white", height: "fit-content" }}>
-              <div style={{ padding: 16, borderBottom: "2px solid var(--typical-black)", background: "#FEFBF8" }}>
-                <h2 style={{ fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--fg-2)", margin: 0, fontWeight: 700 }}>
-                  Direct Messages
-                </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 28, alignItems: "start" }}>
+            <div style={{ border: "2px solid var(--typical-black)", borderRadius: 8, overflow: "hidden", background: "white" }}>
+              <div style={{ padding: "16px 20px", borderBottom: "2px solid var(--typical-black)" }}>
+                <h2 style={{ fontSize: 15, margin: 0, fontWeight: 700 }}>Direct Messages</h2>
               </div>
-              <div style={{ maxHeight: 500, overflowY: "auto" }}>
+              <div style={{ maxHeight: 560, overflowY: "auto" }}>
                 {THREADS.map((t) => (
-                  <div
+                  <button
                     key={t.id}
                     onClick={() => setSelectedId(t.id)}
                     style={{
-                      padding: t.id === selectedId ? "14px 16px 14px 13px" : "14px 16px",
-                      borderBottom: "1px solid var(--fg-2)",
-                      borderLeft: t.id === selectedId ? "3px solid var(--typical-orange)" : "none",
-                      background: t.id === selectedId ? "#FEE9DC" : "transparent",
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "18px 20px",
+                      borderBottom: "1px solid rgba(17,17,17,0.1)",
+                      borderLeft: t.id === selectedId ? "4px solid var(--typical-orange)" : "4px solid transparent",
+                      background: t.id === selectedId ? "rgba(241, 90, 41, 0.08)" : "transparent",
                       cursor: "pointer",
+                      font: "inherit",
+                      color: "inherit",
                     }}
                   >
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--typical-orange)", marginBottom: 6 }}>{t.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--fg-1)", lineHeight: 1.4, marginBottom: 8 }}>{t.preview}</div>
-                    <div style={{ fontSize: 11, color: "var(--fg-2)" }}>{t.time} • {t.followers}</div>
-                  </div>
+                    <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{t.name}</div>
+                    <div style={{ fontSize: 13.5, color: "var(--fg-1)", lineHeight: 1.4, marginBottom: 8 }}>{t.preview}</div>
+                    <div style={{ fontSize: 12.5, color: META_COLOR }}>
+                      {t.time} · {t.followers}
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
                 <select
                   value={assignee}
                   onChange={(e) => assignToTeam(e.target.value)}
                   disabled={assigning}
-                  style={{ width: "100%", fontSize: 12, padding: 12, border: "2px solid var(--typical-black)", background: "white", cursor: "pointer", fontWeight: 600, borderRadius: 4 }}
+                  style={{
+                    fontSize: 15,
+                    padding: "14px 16px",
+                    border: "2px solid var(--typical-black)",
+                    background: "white",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    borderRadius: 8,
+                  }}
                 >
-                  <option value="">Assign to team</option>
+                  <option value="">Assign to team…</option>
                   {teamMembers.map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
                   ))}
                 </select>
-                {assignConfirmed && (
-                  <div style={{ fontSize: 12, color: "var(--typical-orange)", marginTop: 6, fontWeight: 600 }}>
-                    ✓ Added to {assignee}&apos;s Task Manager list
+
+                <button
+                  onClick={() => setShowSendPr(true)}
+                  style={{
+                    fontSize: 15,
+                    padding: "14px 16px",
+                    border: "none",
+                    background: "var(--typical-black)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    borderRadius: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                  }}
+                >
+                  <svg viewBox="0 0 200 200" style={{ width: 20, height: 20, stroke: "white", strokeWidth: 12, fill: "none", strokeLinecap: "round", strokeLinejoin: "round" }}>
+                    <path d="M 75 70 Q 50 50 40 40 Q 30 30 40 20 Q 50 10 70 30 Q 100 50 100 50 Q 100 50 130 30 Q 150 10 160 20 Q 170 30 160 40 Q 150 50 125 70" />
+                    <rect x="40" y="75" width="120" height="90" rx="5" />
+                    <line x1="100" y1="75" x2="100" y2="165" />
+                    <line x1="40" y1="110" x2="160" y2="110" />
+                  </svg>
+                  Send PR
+                </button>
+              </div>
+
+              {(assignConfirmed || assignError) && (
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    color: assignError ? "var(--typical-orange)" : "var(--fg-1)",
+                    marginTop: -8,
+                    marginBottom: 20,
+                  }}
+                >
+                  {assignError || `✓ Added to ${assignee}'s Task Manager list`}
+                </div>
+              )}
+
+              <div style={{ border: "2px solid var(--typical-black)", borderRadius: 8, background: "white", overflow: "hidden" }}>
+                <div style={{ padding: 24, borderBottom: "1px solid rgba(17,17,17,0.12)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{selected.name}</h3>
+                    <div style={{ fontSize: 13, color: META_COLOR, whiteSpace: "nowrap" }}>{selected.time}</div>
                   </div>
-                )}
-                {assignError && (
-                  <div style={{ fontSize: 12, color: "var(--typical-orange)", marginTop: 6 }}>{assignError}</div>
-                )}
-              </div>
+                  <div style={{ fontSize: 14, color: META_COLOR, marginTop: 4 }}>
+                    {selected.handle} · {selected.followers} followers
+                  </div>
+                </div>
 
-              <div style={{ padding: 20, border: "2px solid var(--typical-black)", borderBottom: "none", borderRadius: "4px 4px 0 0", background: "#FEFBF8" }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 12px 0", color: "var(--typical-orange)" }}>{selected.name}</h3>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 12, color: "var(--fg-2)" }}>{selected.handle} • {selected.followers} followers</div>
-                  <div style={{ fontSize: 11, color: "var(--fg-2)" }}>{selected.time}</div>
+                <div style={{ padding: 24, borderBottom: "1px solid rgba(17,17,17,0.12)" }}>
+                  <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7 }}>{selected.body}</p>
+                </div>
+
+                <div style={{ padding: 24 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      padding: 14,
+                      background: "rgba(241, 90, 41, 0.07)",
+                      borderRadius: 8,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div style={{ flex: 1, fontSize: 14.5, lineHeight: 1.5 }}>
+                      <span style={{ fontWeight: 700 }}>AI suggestion:</span> {selected.aiSuggestion}
+                    </div>
+                    <button
+                      onClick={useAiSuggestion}
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "var(--typical-orange)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        padding: 0,
+                        textDecoration: "underline",
+                        textUnderlineOffset: 3,
+                      }}
+                    >
+                      Use this
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Type your message…"
+                    style={{
+                      width: "100%",
+                      minHeight: 120,
+                      fontSize: 15,
+                      padding: 16,
+                      border: "2px solid rgba(17,17,17,0.18)",
+                      borderRadius: 8,
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                      marginBottom: 16,
+                      fontFamily: "inherit",
+                    }}
+                  />
+                  <button
+                    style={{
+                      width: "100%",
+                      fontSize: 16,
+                      padding: 16,
+                      border: "none",
+                      background: "var(--typical-orange)",
+                      color: "white",
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      borderRadius: 8,
+                    }}
+                  >
+                    Send Message
+                  </button>
                 </div>
               </div>
-
-              <div style={{ padding: 24, border: "2px solid var(--typical-black)", borderTop: "1px solid var(--fg-2)", background: "white" }}>
-                <div style={{ padding: 14, background: "white", border: "1px solid var(--fg-2)", borderRadius: 6, fontSize: 14, lineHeight: 1.6, fontWeight: 500 }}>
-                  {selected.body}
-                </div>
-              </div>
-
-              <div style={{ padding: 20, border: "2px solid var(--typical-black)", borderRadius: 4, background: "white", margin: "16px 0" }}>
-                <label style={{ display: "block", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--fg-2)", marginBottom: 16, fontWeight: 700 }}>
-                  Quick reply
-                </label>
-                <div style={{ marginBottom: 16, padding: 12, background: "rgba(241, 90, 41, 0.08)", borderRadius: 4, borderLeft: "3px solid var(--typical-orange)" }}>
-                  <div style={{ fontSize: 13, lineHeight: 1.5, fontWeight: 500 }}>💡 {selected.aiSuggestion}</div>
-                </div>
-                <button
-                  onClick={useAiSuggestion}
-                  style={{ width: "100%", fontSize: 12, padding: 10, border: "2px solid var(--typical-black)", background: "transparent", cursor: "pointer", fontWeight: 600, marginBottom: 16, borderRadius: 4 }}
-                >
-                  Use AI suggestion
-                </button>
-                <textarea
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder="Type message…"
-                  style={{ width: "100%", minHeight: 90, fontSize: 13, padding: 12, border: "1px solid var(--fg-2)", resize: "vertical", borderRadius: 4, boxSizing: "border-box" }}
-                />
-                <button
-                  style={{ width: "100%", fontSize: 13, padding: 13, border: "none", background: "var(--typical-orange)", color: "white", cursor: "pointer", fontWeight: 700, borderRadius: 4, letterSpacing: "0.03em", marginTop: 16 }}
-                >
-                  Send Message
-                </button>
-              </div>
-
-              <button
-                onClick={() => setShowSendPr(true)}
-                style={{
-                  width: "100%",
-                  fontFamily: "var(--font-display)",
-                  fontSize: 20,
-                  padding: 16,
-                  border: "2px solid var(--typical-black)",
-                  background: "white",
-                  color: "var(--typical-orange)",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  borderRadius: 4,
-                  letterSpacing: "-0.01em",
-                  textTransform: "uppercase",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 12,
-                }}
-              >
-                <svg viewBox="0 0 200 200" style={{ width: 24, height: 24, stroke: "var(--typical-orange)", strokeWidth: 12, fill: "none", strokeLinecap: "round", strokeLinejoin: "round" }}>
-                  <path d="M 75 70 Q 50 50 40 40 Q 30 30 40 20 Q 50 10 70 30 Q 100 50 100 50 Q 100 50 130 30 Q 150 10 160 20 Q 170 30 160 40 Q 150 50 125 70" />
-                  <rect x="40" y="75" width="120" height="90" rx="5" />
-                  <line x1="100" y1="75" x2="100" y2="165" />
-                  <line x1="40" y1="110" x2="160" y2="110" />
-                </svg>
-                Send PR
-              </button>
             </div>
           </div>
         ) : (
-          <div>
-            <h2 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 20px 0" }}>DM Automation</h2>
-            <div style={{ border: "2px solid var(--typical-black)", padding: 20, display: "flex", flexDirection: "column", gap: 16, maxWidth: 600, borderRadius: 4, background: "white" }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--fg-2)", marginBottom: 8, fontWeight: 600 }}>
-                  Enable automation
-                </label>
-                <div style={{ display: "flex", gap: 12 }}>
-                  <button
-                    onClick={() => setAutomationOn(true)}
-                    style={{ flex: 1, fontSize: 13, padding: 10, border: "2px solid var(--typical-black)", background: automationOn ? "var(--typical-orange)" : "white", color: automationOn ? "white" : "var(--fg-1)", cursor: "pointer", fontWeight: 600 }}
-                  >
-                    On
-                  </button>
-                  <button
-                    onClick={() => setAutomationOn(false)}
-                    style={{ flex: 1, fontSize: 13, padding: 10, border: !automationOn ? "2px solid var(--typical-black)" : "1px solid var(--fg-2)", background: "white", cursor: "pointer" }}
-                  >
-                    Off
-                  </button>
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ border: "2px solid var(--typical-black)", borderRadius: 8, background: "white", overflow: "hidden" }}>
+              <div style={{ padding: 24, borderBottom: "1px solid rgba(17,17,17,0.12)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>Auto-reply to DMs</div>
+                  <div style={{ fontSize: 14, color: META_COLOR }}>Sends your template the moment a keyword matches.</div>
                 </div>
+                <ToggleSwitch on={automationOn} onChange={setAutomationOn} />
               </div>
-              <div style={{ borderTop: "1px solid var(--fg-2)", paddingTop: 16 }}>
-                <label style={{ display: "block", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--fg-2)", marginBottom: 8, fontWeight: 600 }}>
-                  Trigger: Contains keyword
-                </label>
+
+              <div style={{ padding: 24, borderBottom: "1px solid rgba(17,17,17,0.12)" }}>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Trigger: message contains</label>
                 <input
                   type="text"
-                  placeholder="e.g. 'partnership'"
+                  placeholder="e.g. partnership"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  style={{ width: "100%", fontSize: 14, padding: "10px 12px", border: "1px solid var(--fg-2)", marginBottom: 12, borderRadius: 4, boxSizing: "border-box" }}
+                  style={{
+                    width: "100%",
+                    fontSize: 15,
+                    padding: "14px 16px",
+                    border: "2px solid rgba(17,17,17,0.18)",
+                    borderRadius: 8,
+                    boxSizing: "border-box",
+                    marginBottom: 20,
+                  }}
                 />
-                <label style={{ display: "block", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--fg-2)", marginBottom: 8, fontWeight: 600 }}>
-                  Response template
-                </label>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Response template</label>
                 <select
                   value={template}
                   onChange={(e) => setTemplate(e.target.value)}
-                  style={{ width: "100%", fontSize: 14, padding: "10px 12px", border: "1px solid var(--fg-2)", background: "white", borderRadius: 4 }}
+                  style={{
+                    width: "100%",
+                    fontSize: 15,
+                    padding: "14px 16px",
+                    border: "2px solid rgba(17,17,17,0.18)",
+                    background: "white",
+                    borderRadius: 8,
+                  }}
                 >
                   <option value="">Select template…</option>
                   <option>Initial outreach</option>
@@ -330,12 +426,25 @@ export default function DmsPage() {
                   <option>Follow-up</option>
                 </select>
               </div>
-              <button
-                onClick={saveRule}
-                style={{ width: "100%", fontSize: 14, padding: 12, border: "2px solid var(--typical-black)", background: "white", cursor: "pointer", fontWeight: 600, borderRadius: 4 }}
-              >
-                {savedRule ? "Saved ✓" : "Save rule"}
-              </button>
+
+              <div style={{ padding: 24 }}>
+                <button
+                  onClick={saveRule}
+                  style={{
+                    width: "100%",
+                    fontSize: 16,
+                    padding: 16,
+                    border: "none",
+                    background: "var(--typical-black)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    borderRadius: 8,
+                  }}
+                >
+                  {savedRule ? "Saved ✓" : "Save rule"}
+                </button>
+              </div>
             </div>
           </div>
         )}
