@@ -66,7 +66,7 @@ export default function CreatorSearchPage() {
 
       <div style={{ padding: "48px 40px 8px" }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: "-0.01em", marginBottom: 8 }}>
-          Creator Marketplace
+          Creator Marketplace <span style={{ color: "var(--typical-orange)" }}>— MOCKUP ONLY</span>
         </div>
         <div style={{ fontSize: 14, color: "var(--fg-2)" }}>
           Find and connect with creators. Search, filter, and manage your collaborations.
