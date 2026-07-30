@@ -43,11 +43,15 @@ export async function GET(request: Request) {
   if (!shop) return NextResponse.json({ message: "Shopify not connected yet — visit /api/shopify/install." });
 
   const runStartedAt = new Date();
-  // First-ever sync: fetch full order history so past orders aren't missed.
-  // After that, only fetch what's changed since the last run.
-  const updatedAtMin = shop.last_synced_at
-    ? new Date(new Date(shop.last_synced_at).getTime() - 5 * 60 * 1000).toISOString()
-    : undefined;
+  // First-ever sync (or ?full=1): fetch full order history — needed any time a
+  // newly-added computed field (like line_items_total) needs backfilling onto
+  // orders that haven't been touched in Shopify since. Otherwise, only fetch
+  // what's changed since the last run.
+  const fullResync = new URL(request.url).searchParams.get("full") === "1";
+  const updatedAtMin =
+    shop.last_synced_at && !fullResync
+      ? new Date(new Date(shop.last_synced_at).getTime() - 5 * 60 * 1000).toISOString()
+      : undefined;
 
   const orders = await fetchRecentShopifyOrders(shop.shop_domain, shop.access_token, updatedAtMin);
   const matching = orders.filter(orderMatchesInfluencerCriteria);
