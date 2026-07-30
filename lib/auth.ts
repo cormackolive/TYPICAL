@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+
 export const DASHBOARD_SESSION_COOKIE = "dashboard_session";
 
 async function hmacHex(key: string, message: string): Promise<string> {
@@ -37,4 +39,15 @@ export async function isValidDashboardSession(token: string | undefined): Promis
   if (!token || !process.env.DASHBOARD_PASSWORD) return false;
   const expected = await hmacHex(process.env.DASHBOARD_PASSWORD, "typical-dashboard-session");
   return timingSafeEqualStr(token, expected);
+}
+
+/**
+ * API routes are excluded from middleware.ts's page-level password gate (so that
+ * /api/auth/login, /api/shopify/*, and /api/cron/sync-shopify can work without a
+ * session cookie). Any route that reads or writes real data must call this itself -
+ * middleware alone does not protect anything under /api.
+ */
+export async function requireDashboardSession(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return isValidDashboardSession(cookieStore.get(DASHBOARD_SESSION_COOKIE)?.value);
 }
