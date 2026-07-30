@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import NavBar from "@/components/NavBar";
-import { CREATORS } from "@/lib/creators";
+import { CREATORS, type AgeRange, type Gender } from "@/lib/creators";
 
 type SortBy = "relevance" | "followers" | "engagement" | "recent";
 type ViewMode = "grid" | "list";
@@ -14,15 +14,27 @@ function parseCount(value: string): number {
   return n;
 }
 
-const FILTER_GROUPS = [
-  { title: "Creator", options: ["Gender", "Interests", "Age", "State"] },
-  { title: "Audience", options: ["Gender", "Interests", "Age", "Country", "State"] },
-];
+function uniqueSorted<T extends string>(values: T[]): T[] {
+  return Array.from(new Set(values)).sort();
+}
+
+const EMPTY_FILTERS = {
+  gender: "" as Gender | "",
+  interest: "",
+  age: "" as AgeRange | "",
+  state: "",
+  audienceGender: "" as Gender | "",
+  audienceInterest: "",
+  audienceAge: "" as AgeRange | "",
+  audienceCountry: "",
+  audienceState: "",
+};
 
 export default function CreatorSearchPage() {
-  const [query, setQuery] = useState("");
+  const [vibeQuery, setVibeQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("relevance");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [favorites, setFavorites] = useState<Set<string>>(
     new Set(CREATORS.filter((c) => c.favorited).map((c) => c.id))
   );
@@ -36,16 +48,46 @@ export default function CreatorSearchPage() {
     });
   }
 
+  function setFilter<K extends keyof typeof filters>(key: K, value: (typeof filters)[K]) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }
+
+  const options = useMemo(
+    () => ({
+      genders: uniqueSorted(CREATORS.map((c) => c.gender)),
+      interests: uniqueSorted(CREATORS.flatMap((c) => c.niches)),
+      ages: uniqueSorted(CREATORS.map((c) => c.ageRange)),
+      states: uniqueSorted(CREATORS.map((c) => c.state)),
+      audienceGenders: uniqueSorted(CREATORS.map((c) => c.audience.gender)),
+      audienceCountries: uniqueSorted(CREATORS.map((c) => c.audience.country)),
+      audienceStates: uniqueSorted(CREATORS.map((c) => c.audience.state)),
+    }),
+    []
+  );
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = vibeQuery.trim().toLowerCase();
     let filtered = CREATORS.filter((c) => {
-      if (!q) return true;
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.handle.toLowerCase().includes(q) ||
-        c.bio.toLowerCase().includes(q) ||
-        c.niches.some((n) => n.toLowerCase().includes(q))
-      );
+      if (q) {
+        const matchesQuery =
+          c.name.toLowerCase().includes(q) ||
+          c.handle.toLowerCase().includes(q) ||
+          c.bio.toLowerCase().includes(q) ||
+          c.niches.some((n) => n.toLowerCase().includes(q));
+        if (!matchesQuery) return false;
+      }
+      if (filters.gender && c.gender !== filters.gender) return false;
+      if (filters.interest && !c.niches.includes(filters.interest)) return false;
+      if (filters.age && c.ageRange !== filters.age) return false;
+      if (filters.state && c.state !== filters.state) return false;
+      if (filters.audienceGender && c.audience.gender !== filters.audienceGender) return false;
+      if (filters.audienceInterest && !c.niches.includes(filters.audienceInterest)) return false;
+      if (filters.audienceAge && c.audience.ageRange !== filters.audienceAge) return false;
+      if (filters.audienceCountry && c.audience.country !== filters.audienceCountry) return false;
+      if (filters.audienceState && c.audience.state !== filters.audienceState) return false;
+      return true;
     });
 
     if (sortBy === "followers") {
@@ -56,9 +98,19 @@ export default function CreatorSearchPage() {
     // "recent" and "relevance" both fall back to the original mock order.
 
     return filtered;
-  }, [query, sortBy]);
+  }, [vibeQuery, filters, sortBy]);
 
   const interestedCount = favorites.size;
+
+  const selectStyle: React.CSSProperties = {
+    width: "100%",
+    fontFamily: "var(--font-sans)",
+    fontSize: 12,
+    border: "var(--border-hair)",
+    background: "var(--bg-1)",
+    color: "var(--fg-1)",
+    padding: "8px 10px",
+  };
 
   return (
     <div className="typical" style={{ minHeight: "100vh", background: "var(--bg-1)", fontFamily: "var(--font-sans)" }}>
@@ -98,15 +150,38 @@ export default function CreatorSearchPage() {
       </div>
 
       <div style={{ padding: "24px 40px 80px" }}>
-        <div style={{ marginBottom: 24 }}>
+        {/* Vibe Prospecting: today this just does a plain keyword match against
+            name/bio/niches. The plan is to send this text to Claude to turn a loose
+            description into structured filters — that part isn't wired up yet. */}
+        <div style={{ border: "2px solid var(--typical-black)", padding: 16, marginBottom: 24, background: "var(--bg-1)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 18, letterSpacing: "-0.01em" }}>Vibe Prospecting</div>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--typical-orange)",
+                border: "1px solid var(--typical-orange)",
+                padding: "2px 8px",
+              }}
+            >
+              Coming soon: AI-powered
+            </span>
+          </div>
           <input
             className="tg-input"
             type="text"
-            placeholder="Search by username or keyword"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Describe the vibe — e.g. “high-energy fitness creators with young audiences”"
+            value={vibeQuery}
+            onChange={(e) => setVibeQuery(e.target.value)}
             style={{ width: "100%" }}
           />
+          <div style={{ fontSize: 12, color: "var(--fg-2)", marginTop: 8 }}>
+            For now this matches your text against creator names, bios, and niches. Eventually it&apos;ll use Claude to
+            turn a loose description like this into real filters automatically.
+          </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -129,26 +204,90 @@ export default function CreatorSearchPage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 24, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-2)" }}>
-              Filter search results
-            </div>
-            {FILTER_GROUPS.map((group) => (
-              <div key={group.title} style={{ border: "var(--border-hair)", padding: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{group.title}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "var(--border-hair)", paddingTop: 10 }}>
-                  {group.options.map((opt) => (
-                    <div key={opt} style={{ fontSize: 12, color: "var(--fg-2)" }}>
-                      {opt} ▼
-                    </div>
-                  ))}
-                </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-2)" }}>
+                Filter results
               </div>
-            ))}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => setFilters(EMPTY_FILTERS)}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--typical-orange)", padding: 0 }}
+                >
+                  Clear ({activeFilterCount})
+                </button>
+              )}
+            </div>
+
+            <div style={{ border: "var(--border-hair)", padding: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Creator</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "var(--border-hair)", paddingTop: 10 }}>
+                <select style={selectStyle} value={filters.gender} onChange={(e) => setFilter("gender", e.target.value as Gender | "")}>
+                  <option value="">Gender: Any</option>
+                  {options.genders.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <select style={selectStyle} value={filters.interest} onChange={(e) => setFilter("interest", e.target.value)}>
+                  <option value="">Interests: Any</option>
+                  {options.interests.map((i) => (
+                    <option key={i} value={i}>{i}</option>
+                  ))}
+                </select>
+                <select style={selectStyle} value={filters.age} onChange={(e) => setFilter("age", e.target.value as AgeRange | "")}>
+                  <option value="">Age: Any</option>
+                  {options.ages.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+                <select style={selectStyle} value={filters.state} onChange={(e) => setFilter("state", e.target.value)}>
+                  <option value="">State: Any</option>
+                  {options.states.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ border: "var(--border-hair)", padding: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Audience</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "var(--border-hair)", paddingTop: 10 }}>
+                <select style={selectStyle} value={filters.audienceGender} onChange={(e) => setFilter("audienceGender", e.target.value as Gender | "")}>
+                  <option value="">Gender: Any</option>
+                  {options.audienceGenders.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <select style={selectStyle} value={filters.audienceInterest} onChange={(e) => setFilter("audienceInterest", e.target.value)}>
+                  <option value="">Interests: Any</option>
+                  {options.interests.map((i) => (
+                    <option key={i} value={i}>{i}</option>
+                  ))}
+                </select>
+                <select style={selectStyle} value={filters.audienceAge} onChange={(e) => setFilter("audienceAge", e.target.value as AgeRange | "")}>
+                  <option value="">Age: Any</option>
+                  {options.ages.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+                <select style={selectStyle} value={filters.audienceCountry} onChange={(e) => setFilter("audienceCountry", e.target.value)}>
+                  <option value="">Country: Any</option>
+                  {options.audienceCountries.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select style={selectStyle} value={filters.audienceState} onChange={(e) => setFilter("audienceState", e.target.value)}>
+                  <option value="">State: Any</option>
+                  {options.audienceStates.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           {results.length === 0 ? (
             <div style={{ padding: "60px 0", textAlign: "center", color: "var(--fg-2)", fontFamily: "var(--font-editorial)", fontSize: 22 }}>
-              No creators match that search.
+              No creators match those filters.
             </div>
           ) : (
             <div

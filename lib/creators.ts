@@ -1,3 +1,6 @@
+export type Gender = "Female" | "Male" | "Non-binary";
+export type AgeRange = "18-24" | "25-34" | "35-44" | "45+";
+
 export interface Creator {
   id: string;
   name: string;
@@ -16,6 +19,15 @@ export interface Creator {
   growth30: string;
   growth90: string;
   favorited: boolean;
+  gender: Gender;
+  ageRange: AgeRange;
+  state: string;
+  audience: {
+    gender: Gender;
+    ageRange: AgeRange;
+    country: string;
+    state: string;
+  };
 }
 
 // Mock data — real creator profiles require Meta Graph API access (same
@@ -39,6 +51,10 @@ export const CREATORS: Creator[] = [
     growth30: "+12.5K",
     growth90: "+31.8K",
     favorited: false,
+    gender: "Female",
+    ageRange: "25-34",
+    state: "California",
+    audience: { gender: "Female", ageRange: "18-24", country: "United States", state: "California" },
   },
   {
     id: "marcus-johnson",
@@ -58,6 +74,10 @@ export const CREATORS: Creator[] = [
     growth30: "+18.2K",
     growth90: "+52.6K",
     favorited: true,
+    gender: "Male",
+    ageRange: "25-34",
+    state: "Texas",
+    audience: { gender: "Male", ageRange: "25-34", country: "United States", state: "Texas" },
   },
   {
     id: "jade-liu",
@@ -77,6 +97,10 @@ export const CREATORS: Creator[] = [
     growth30: "+9.1K",
     growth90: "+27.3K",
     favorited: false,
+    gender: "Female",
+    ageRange: "18-24",
+    state: "New York",
+    audience: { gender: "Female", ageRange: "18-24", country: "United States", state: "New York" },
   },
   {
     id: "alex-rivera",
@@ -96,6 +120,10 @@ export const CREATORS: Creator[] = [
     growth30: "+7.4K",
     growth90: "+19.9K",
     favorited: false,
+    gender: "Non-binary",
+    ageRange: "25-34",
+    state: "Florida",
+    audience: { gender: "Male", ageRange: "35-44", country: "United States", state: "Florida" },
   },
   {
     id: "emma-thompson",
@@ -115,6 +143,10 @@ export const CREATORS: Creator[] = [
     growth30: "+11.0K",
     growth90: "+29.4K",
     favorited: true,
+    gender: "Female",
+    ageRange: "35-44",
+    state: "Washington",
+    audience: { gender: "Female", ageRange: "25-34", country: "United States", state: "Washington" },
   },
   {
     id: "jordan-blake",
@@ -134,5 +166,9 @@ export const CREATORS: Creator[] = [
     growth30: "+14.7K",
     growth90: "+38.1K",
     favorited: false,
+    gender: "Male",
+    ageRange: "18-24",
+    state: "Illinois",
+    audience: { gender: "Male", ageRange: "18-24", country: "Canada", state: "Ontario" },
   },
 ];
