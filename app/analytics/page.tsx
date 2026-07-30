@@ -44,7 +44,10 @@ export default async function AnalyticsPage() {
   }
 
   const kpis = [
-    { label: "Total PR Spend (RRP)", value: "$12,450" },
+    // No Shopify field distinguishes retail from wholesale value, so there's
+    // nothing to compute this from yet — shown as "not tracked" rather than a
+    // fabricated number, until there's a real source for it.
+    { label: "Total PR Spend (RRP)", value: "—" },
     { label: "Total WSP", value: `$${Math.round(totalWsp).toLocaleString()}` },
     { label: "Total Influencers", value: String(influencers.length) },
     { label: "Content Posted", value: String(statusCounts.posted) },

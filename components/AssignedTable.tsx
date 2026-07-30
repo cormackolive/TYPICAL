@@ -33,10 +33,6 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
     });
   }
 
-  function markDone(id: string) {
-    patchAssignment(id, { status: "Complete" });
-  }
-
   async function addAssignment(e: React.FormEvent) {
     e.preventDefault();
     setAdding(true);
@@ -135,7 +131,7 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
                 <tr style={{ background: "var(--bg-1)", borderBottom: "1px solid rgba(17,17,17,0.18)" }}>
-                  {["Influencer", "Team member", "Message", "Due date", "Status", ""].map((h) => (
+                  {["Influencer", "Team member", "Message", "Due date", "Status"].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -194,25 +190,26 @@ export default function AssignedTable({ initialAssignments }: { initialAssignmen
                       />
                     </td>
                     <td style={{ padding: "14px 12px" }}>
-                      <span
+                      <select
+                        value={a.status}
+                        onChange={(e) => patchAssignment(a.id, { status: e.target.value as AssignmentDb["status"] })}
                         style={{
-                          display: "inline-block",
-                          padding: "6px 10px",
+                          border: "1px solid rgba(0,0,0,0.15)",
                           borderRadius: 4,
+                          padding: "6px 10px",
                           fontSize: 12,
                           fontWeight: 600,
+                          fontFamily: "inherit",
                           background: STATUS_SWATCH[a.status],
+                          color: "var(--typical-ink)",
                         }}
                       >
-                        {a.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 12px" }}>
-                      {a.status === "Pending" && (
-                        <button className="tg-btn" onClick={() => markDone(a.id)}>
-                          Mark done
-                        </button>
-                      )}
+                        {(Object.keys(STATUS_SWATCH) as AssignmentDb["status"][]).map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 ))}
