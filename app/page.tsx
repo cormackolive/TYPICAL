@@ -84,7 +84,7 @@ export default function HomePage() {
         <NavBar section="Home" />
 
         <div style={{ padding: "60px 40px 40px", maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 48, lineHeight: 1.1, marginBottom: 16 }}>PR Hub</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 48, lineHeight: 1.1, marginBottom: 16 }}>PR Dashboard</div>
           <div style={{ fontSize: 16, color: "var(--fg-2)", maxWidth: 600 }}>
             Manage relationships, track orders, respond to assignments, and monitor performance in one place.
           </div>
