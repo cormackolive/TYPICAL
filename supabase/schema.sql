@@ -2,7 +2,13 @@
 
 create extension if not exists "pgcrypto";
 
-create type persona_type as enum ('Lifestyle', 'Home', 'Wellness', 'Personality', 'Environment');
+-- Postgres has no "create type if not exists", so this is the standard workaround
+-- to make re-running this whole file safe even after the type already exists.
+do $$ begin
+  create type persona_type as enum ('Lifestyle', 'Home', 'Wellness', 'Personality', 'Environment');
+exception
+  when duplicate_object then null;
+end $$;
 
 create table if not exists influencer (
   id                uuid primary key default gen_random_uuid(),
@@ -74,14 +80,32 @@ alter table shopify_shop enable row level security;
 -- Supabase Auth sessions (access is gated by a shared password in middleware.ts instead),
 -- so they never match anyone. That's correct — it means the anon key can't read/write
 -- anything. All real app access goes through server code using the service_role key.
+-- (`drop policy if exists` first because `create policy` has no "if not exists" form.)
+drop policy if exists "authenticated read influencer" on influencer;
 create policy "authenticated read influencer" on influencer for select to authenticated using (true);
+
+drop policy if exists "authenticated write influencer" on influencer;
 create policy "authenticated write influencer" on influencer for insert to authenticated with check (true);
+
+drop policy if exists "authenticated update influencer" on influencer;
 create policy "authenticated update influencer" on influencer for update to authenticated using (true);
 
+drop policy if exists "authenticated read shopify_order" on shopify_order;
 create policy "authenticated read shopify_order" on shopify_order for select to authenticated using (true);
 
 -- No policies on shopify_shop: it is only ever accessed via the service_role key (bypasses RLS),
 -- so it stays unreadable to every browser client, authenticated or not.
 
-alter publication supabase_realtime add table influencer;
-alter publication supabase_realtime add table shopify_order;
+-- Postgres has no "add table if not exists" for publications either, hence the
+-- same duplicate_object workaround as the persona_type enum above.
+do $$ begin
+  alter publication supabase_realtime add table influencer;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter publication supabase_realtime add table shopify_order;
+exception
+  when duplicate_object then null;
+end $$;
