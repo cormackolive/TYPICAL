@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import NotificationsCenter from "@/components/NotificationsCenter";
+import NotificationsEngine from "@/components/NotificationsEngine";
 
 export default function NavBar({ section }: { section: string }) {
   const router = useRouter();
@@ -52,6 +54,8 @@ export default function NavBar({ section }: { section: string }) {
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <NotificationsEngine />
+        <NotificationsCenter />
         {section !== "Home" && (
           <a
             href="/"

@@ -1,5 +1,4 @@
 import NavBar from "@/components/NavBar";
-import NotificationsPopup from "@/components/NotificationsPopup";
 
 const SECTIONS = [
   {
@@ -85,7 +84,6 @@ export default function HomePage() {
   return (
     <div className="typical" style={{ minHeight: "100vh", background: "var(--bg-1)", fontFamily: "var(--font-sans)" }}>
       <PolkaDots />
-      <NotificationsPopup />
 
       {/* Sits above the fixed polka-dot layer via its own stacking context. */}
       <div style={{ position: "relative", zIndex: 1 }}>
