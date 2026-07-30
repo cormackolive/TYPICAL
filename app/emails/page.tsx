@@ -131,6 +131,9 @@ export default function EmailsPage() {
       <NavBar section="Email" />
 
       <div style={{ padding: "40px 48px 80px" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: "-0.01em", marginBottom: 20 }}>
+          Email <span style={{ color: "var(--typical-orange)" }}>— MOCKUP ONLY</span>
+        </div>
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--fg-2)", marginBottom: 32 }}>
           {(["messages", "automation"] as const).map((t) => (
             <button
