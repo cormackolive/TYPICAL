@@ -9,8 +9,8 @@ const SECTIONS = [
   },
   {
     href: "/assigned",
-    icon: "Assign",
-    title: "Assigned",
+    icon: "To-Do",
+    title: "Task Manager",
     desc: "Review tasks and follow-ups assigned across the team, and mark them done.",
   },
   {

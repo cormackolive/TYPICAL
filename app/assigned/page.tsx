@@ -11,11 +11,11 @@ export default async function AssignedPage() {
 
   return (
     <div className="typical" style={{ minHeight: "100vh", background: "var(--bg-1)", fontFamily: "var(--font-sans)" }}>
-      <NavBar section="Assigned" />
+      <NavBar section="Task Manager" />
 
       <div style={{ padding: "48px 40px 8px" }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: "-0.01em", lineHeight: 1.1, marginBottom: 12 }}>
-          Assigned
+          Task Manager
         </div>
         <div style={{ fontSize: 16, color: "var(--fg-2)" }}>
           Review tasks and follow-ups assigned to you. Mark as complete when done.
