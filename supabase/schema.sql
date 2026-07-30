@@ -2,7 +2,13 @@
 
 create extension if not exists "pgcrypto";
 
-create type persona_type as enum ('Lifestyle', 'Home', 'Wellness', 'Personality', 'Environment');
+-- Postgres has no "create type if not exists", so this is the standard workaround
+-- to make re-running this whole file safe even after the type already exists.
+do $$ begin
+  create type persona_type as enum ('Lifestyle', 'Home', 'Wellness', 'Personality', 'Environment');
+exception
+  when duplicate_object then null;
+end $$;
 
 create table if not exists influencer (
   id                uuid primary key default gen_random_uuid(),
